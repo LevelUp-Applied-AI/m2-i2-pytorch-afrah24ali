@@ -13,87 +13,76 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
-
-
-# ─── Model Definition ─────────────────────────────────────────────────────────
+import numpy as np
 
 class HousingModel(nn.Module):
-    """Neural network for predicting housing prices from property features.
-
-    Architecture: Linear(5, 32) -> ReLU -> Linear(32, 1)
-    """
-
+    """Neural network for predicting housing prices from property features."""
     def __init__(self):
         """Define the model layers."""
         super().__init__()
-        # TODO: Define three layers as attributes:
-        #   self.layer1 = nn.Linear(5, 32)   — 5 input features → 32 hidden units
-        #   self.relu   = nn.ReLU()           — activation function
-        #   self.layer2 = nn.Linear(32, 1)    — 32 hidden → 1 output (price prediction)
-        pass
+        self.layer1 = nn.Linear(5, 32)
+        self.relu = nn.ReLU()
+        self.layer2 = nn.Linear(32, 1)
 
     def forward(self, x):
-        """Define the forward pass.
+        x = self.layer1(x)
+        x = self.relu(x)
+        x = self.layer2(x)
+        return x
 
-        Args:
-            x (torch.Tensor): Input tensor of shape (N, 5).
+# ─── Metrics Function ─────────────────────────────────────────────────────────
+def compute_mae_r2(y_true, y_pred):
+    y_true_np = y_true.detach().numpy()  #  Fixed
+    y_pred_np = y_pred.detach().numpy()  # Fixed
+    mae = np.mean(np.abs(y_true_np - y_pred_np))
+    ss_res = np.sum((y_true_np - y_pred_np)**2)
+    ss_tot = np.sum((y_true_np - np.mean(y_true_np))**2)
+    r2 = 1 - ss_res/ss_tot
+    return mae, r2
 
-        Returns:
-            torch.Tensor: Predictions of shape (N, 1).
-        """
-        # TODO: Pass x through layer1, then relu, then layer2
-        # TODO: Return the output
-        pass
-
-
-# ─── Main Training Script ─────────────────────────────────────────────────────
-
+# ─── Main Script ──────────────────────────────────────────────────────────────
 def main():
-    """Load data, train HousingModel, and save predictions."""
+    # Load data
+    df = pd.read_csv('data/housing.csv')
+    print("Data shape:", df.shape)
 
-    # ── 1. Load Data ──────────────────────────────────────────────────────────
-    # TODO: Load data/housing.csv using pd.read_csv
-    # TODO: Print the shape of the DataFrame
-
-    # ── 2. Separate Features and Target ──────────────────────────────────────
+    # Features and target
     feature_cols = ['area_sqm', 'bedrooms', 'floor', 'age_years', 'distance_to_center_km']
-    # TODO: X = df[feature_cols]
-    # TODO: y = df[['price_jod']]   — use double brackets to keep shape (N, 1)
+    X = df[feature_cols]
+    y = df[['price_jod']]
 
-    # ── 3. Standardize Features ───────────────────────────────────────────────
-    # TODO: X_mean = X.mean()
-    # TODO: X_std  = X.std()
-    # TODO: X_scaled = (X - X_mean) / X_std
-    # Why: features have very different scales; standardization ensures
-    #      gradient updates are balanced across all input dimensions.
+    X_mean, X_std = X.mean(), X.std()
+    X_scaled = (X - X_mean) / X_std
 
-    # ── 4. Convert to Tensors ─────────────────────────────────────────────────
-    # TODO: X_tensor = torch.tensor(X_scaled.values, dtype=torch.float32)
-    # TODO: y_tensor = torch.tensor(y.values,        dtype=torch.float32)
-    # TODO: Print X_tensor.shape and y_tensor.shape
+    X_tensor = torch.tensor(X_scaled.values, dtype=torch.float32)
+    y_tensor = torch.tensor(y.values, dtype=torch.float32)
 
-    # ── 5. Instantiate Model, Loss, and Optimizer ─────────────────────────────
-    # TODO: model     = HousingModel()
-    # TODO: criterion = nn.MSELoss()
-    # TODO: optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    model = HousingModel()
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
-    # ── 6. Training Loop ──────────────────────────────────────────────────────
+    # Training loop
     num_epochs = 100
-    # TODO: for epoch in range(num_epochs):
-    #     Forward pass:  predictions = model(X_tensor)
-    #     Compute loss:  loss = criterion(predictions, y_tensor)
-    #     Zero grads:    optimizer.zero_grad()
-    #     Backward:      loss.backward()
-    #     Update:        optimizer.step()
-    #     Print every 10 epochs: f"Epoch {epoch:3d}: Loss = {loss.item():.4f}"
+    loss_history = []
 
-    # ── 7. Save Predictions ───────────────────────────────────────────────────
-    # TODO: Generate predictions (wrap in torch.no_grad() for good practice)
-    # TODO: Convert predictions and actuals to numpy arrays
-    # TODO: Build a DataFrame with columns 'actual' and 'predicted'
-    # TODO: Save to predictions.csv with index=False
-    # TODO: Print "Saved predictions.csv"
+    for epoch in range(num_epochs):
+        preds = model(X_tensor)
+        loss = criterion(preds, y_tensor)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        print(f"Epoch {epoch}: Loss = {loss.item():.4f}")
 
+    # Save predictions
+    with torch.no_grad():
+        all_preds = model(X_tensor)
+    df_out = pd.DataFrame({
+        "actual": y_tensor.numpy().flatten(),
+        "predicted": all_preds.numpy().flatten()
+    })
+    df_out.to_csv("predictions.csv", index=False)
+    print("Saved predictions.csv")
 
 if __name__ == "__main__":
     main()
+
