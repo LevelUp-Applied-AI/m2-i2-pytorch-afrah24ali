@@ -3,19 +3,41 @@
 
 **Module 2 — Programming for AI & Data Science**
 
-See the [Module 2 Integration Task Guide](https://levelup-applied-ai.github.io/aispire-14005-pages/modules/module-2/learner/integration-guide) for full instructions.
+This assignment implements a neural network to predict **apartment prices in Jordanian Dinars (JOD)** from a small tabular dataset.
 
 ---
 
-## Quick Reference
+## Model Objective
 
-**File to complete:** `train.py`
+The model predicts `price_jod` using 5 input features:
 
-**Install PyTorch before running:**
-```bash
-pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
+- `area_sqm` — Apartment area in square meters (50–250)  
+- `bedrooms` — Number of bedrooms (1–5)  
+- `floor` — Floor number (1–15)  
+- `age_years` — Building age in years (0–40)  
+- `distance_to_center_km` — Distance to city center in km (0.5–25)  
 
-**Branch:** `integration-2/pytorch`
+---
 
-**Submit:** PR URL → TalentLMS Unit 8 text field
+## Training Configuration
+
+- **Model architecture:** 5 → 32 (ReLU) → 1  
+- **Loss function:** Mean Squared Error (MSE)  
+- **Optimizer:** Adam  
+- **Learning rate:** 0.01  
+- **Number of epochs:** 100  
+
+---
+
+## Training Outcome
+
+- Loss decreased gradually over epochs.  
+- Final loss value: approximately **1.94e9** (due to the large scale of prices).  
+
+---
+
+## Behavioral Observation
+
+- Initial loss was very high because the target variable `price_jod` was not standardized.  
+- Loss decreased more quickly in early epochs and then slowed.  
+- Predictions tend to slightly underestimate very high-priced apartments (above ~120,000 JOD).  
